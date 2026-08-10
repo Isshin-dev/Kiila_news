@@ -1,0 +1,12 @@
+name: Daily News
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hello
+        run: echo "KIILA News Bot is working"
