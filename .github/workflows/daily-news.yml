@@ -4,13 +4,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-slack:
+  daily-news:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send test message to Slack
-        run: |
-          curl -X POST \
-            -H 'Content-type: application/json' \
-            --data '{"text":"KIILA News Bot のテスト送信です。"}' \
-            "${{ secrets.SLACK_WEBHOOK_URL }}"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send forestry news to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python news.py
