@@ -4,9 +4,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-slack:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Hello
-        run: echo "KIILA News Bot is working"
+      - name: Send test message to Slack
+        run: |
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            --data '{"text":"KIILA News Bot のテスト送信です。"}' \
+            "${{ secrets.SLACK_WEBHOOK_URL }}"
