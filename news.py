@@ -6,9 +6,31 @@ import xml.etree.ElementTree as ET
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 
+CATEGORIES = (
+    {
+        "title": "🌲 森・林業ニュース",
+        "query": "林業 OR 森林 OR 国産材 OR 木材",
+    },
+    {
+        "title": "🪑 家具ニュース",
+        "query": "家具 OR インテリア家具 OR オフィス家具",
+    },
+    {
+        "title": "🏗️ 建築ニュース",
+        "query": "建築 OR 建築業界 OR 建築設計",
+    },
+    {
+        "title": "🛋️ 内装ニュース",
+        "query": "内装 OR インテリアデザイン OR 店舗内装",
+    },
+    {
+        "title": "🔨 リフォームニュース",
+        "query": "リフォーム OR リノベーション OR 改修",
+    },
+)
 
-def fetch_forestry_news(limit=3):
-    query = "林業 OR 森林 OR 国産材 OR 木材"
+
+def fetch_news(query, limit=3):
     encoded_query = urllib.parse.quote(query)
 
     url = (
@@ -43,9 +65,9 @@ def fetch_forestry_news(limit=3):
     return news
 
 
-def build_message(news):
+def build_message(category_title, news):
     lines = [
-        "🌲 *森・林業ニュース*",
+        category_title,
         "",
     ]
 
@@ -62,9 +84,7 @@ def build_message(news):
 
 
 def send_to_slack(message):
-    payload = json.dumps(
-        {"text": message}
-    ).encode("utf-8")
+    payload = json.dumps({"text": message}).encode("utf-8")
 
     request = urllib.request.Request(
         SLACK_WEBHOOK_URL,
@@ -75,16 +95,13 @@ def send_to_slack(message):
 
     with urllib.request.urlopen(request, timeout=20) as response:
         if response.status != 200:
-            raise RuntimeError(
-                f"Slack returned HTTP {response.status}"
-            )
+            raise RuntimeError(f"Slack returned HTTP {response.status}")
 
 
 if __name__ == "__main__":
-    news = fetch_forestry_news(limit=3)
+    for category in CATEGORIES:
+        news = fetch_news(category["query"], limit=3)
+        message = build_message(category["title"], news)
+        send_to_slack(message)
 
-    message = build_message(news)
-
-    send_to_slack(message)
-
-    print("Sent forestry news to Slack")
+    print(f"Sent {len(CATEGORIES)} category news threads to Slack")
