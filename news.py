@@ -30,7 +30,7 @@ CATEGORIES = (
 )
 
 
-def fetch_news(query, limit=3):
+def fetch_news(query, limit=1):
     encoded_query = urllib.parse.quote(query)
 
     url = (
@@ -100,7 +100,7 @@ def send_to_slack(message):
 
 if __name__ == "__main__":
     for category in CATEGORIES:
-        news = fetch_news(category["query"], limit=3)
+        news = fetch_news(category["query"])
         message = build_message(category["title"], news)
         send_to_slack(message)
 
