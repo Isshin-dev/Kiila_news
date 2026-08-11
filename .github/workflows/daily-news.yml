@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Send forestry news to Slack
+      - name: Send category news to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: python news.py
