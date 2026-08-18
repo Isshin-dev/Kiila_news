@@ -5,6 +5,8 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
+SEEN_NEWS_PATH = "seen_news.json"
+CANDIDATE_LIMIT = 20
 
 CATEGORIES = (
     {
@@ -26,7 +28,33 @@ CATEGORIES = (
 )
 
 
-def fetch_news(query, limit=1):
+def load_seen_news():
+    try:
+        with open(SEEN_NEWS_PATH, encoding="utf-8") as history_file:
+            history = json.load(history_file)
+    except FileNotFoundError:
+        return set()
+
+    if not isinstance(history, list) or not all(
+        isinstance(link, str) for link in history
+    ):
+        raise ValueError(f"{SEEN_NEWS_PATH} must contain a JSON list of URLs")
+
+    return set(history)
+
+
+def save_seen_news(seen_links):
+    with open(SEEN_NEWS_PATH, "w", encoding="utf-8") as history_file:
+        json.dump(
+            sorted(seen_links),
+            history_file,
+            ensure_ascii=False,
+            indent=2,
+        )
+        history_file.write("\n")
+
+
+def fetch_news(query, limit=CANDIDATE_LIMIT):
     encoded_query = urllib.parse.quote(query)
 
     url = (
@@ -61,6 +89,14 @@ def fetch_news(query, limit=1):
     return news
 
 
+def select_unseen_news(news, seen_links):
+    for article in news:
+        if article["link"] and article["link"] not in seen_links:
+            return [article]
+
+    return []
+
+
 def build_message(category_title, news):
     lines = [
         category_title,
@@ -68,7 +104,7 @@ def build_message(category_title, news):
     ]
 
     if not news:
-        lines.append("今日はニュースを取得できませんでした。")
+        lines.append("新しいニュースはありませんでした。")
         return "\n".join(lines)
 
     for index, article in enumerate(news, start=1):
@@ -95,9 +131,18 @@ def send_to_slack(message):
 
 
 if __name__ == "__main__":
+    seen_links = load_seen_news()
+
     for category in CATEGORIES:
-        news = fetch_news(category["query"])
+        candidates = fetch_news(category["query"])
+        news = select_unseen_news(candidates, seen_links)
         message = build_message(category["title"], news)
+
         send_to_slack(message)
+
+        for article in news:
+            seen_links.add(article["link"])
+
+        save_seen_news(seen_links)
 
     print(f"Sent {len(CATEGORIES)} category news threads to Slack")
